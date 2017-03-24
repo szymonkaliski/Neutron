@@ -1,0 +1,22 @@
+{
+  "name": "neutron",
+  "version": "0.0.1",
+  "description": "run things quickly in electron",
+  "main": "index.js",
+  "dependencies": {
+    "chokidar": "^1.6.1",
+    "electron-prebuilt": "^1.4.13",
+    "express": "^4.15.2",
+    "get-port": "^3.0.0",
+    "yargs": "^7.0.2"
+  },
+  "scripts": {
+    "start": "electron index.js --not-packaged=true",
+    "dev": "electron index.js --not-packaged=true --debug=true"
+  },
+  "bin": {
+    "vmd": "./cli.js"
+  },
+  "author": "Szymon Kaliski <hi@szymonkaliski.com>",
+  "license": "MIT"
+}
