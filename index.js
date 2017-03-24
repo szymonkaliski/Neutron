@@ -62,7 +62,19 @@ const displayFile = (port, file) => {
 };
 
 const watchPath = path => {
-  const watcher = watch(path);
+  const ignored = [
+    'node_modules/**',
+    'bower_components/**',
+    '.git',
+    '.hg',
+    '.svn',
+    '.DS_Store',
+    '*.swp',
+    'thumbs.db',
+    'desktop.ini'
+  ];
+
+  const watcher = watch(path, { ignored, ignoreInitial: true });
 
   const reload = () => mainWindow.reload();
 
