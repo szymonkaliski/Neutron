@@ -4,10 +4,16 @@
   "description": "run things quickly in electron",
   "main": "index.js",
   "dependencies": {
+    "ansi-parser": "^3.2.7",
     "chokidar": "^1.6.1",
+    "detective": "^4.5.0",
     "electron-prebuilt": "^1.4.13",
     "express": "^4.15.2",
     "get-port": "^3.0.0",
+    "npm": "^5.0.2",
+    "recursive-deps": "^1.0.2",
+    "through": "^2.3.8",
+    "through2": "^2.0.3",
     "yargs": "^7.0.2"
   },
   "scripts": {
@@ -15,7 +21,7 @@
     "dev": "electron index.js --not-packaged=true --debug=true"
   },
   "bin": {
-    "vmd": "./cli.js"
+    "neutron": "./cli.js"
   },
   "author": "Szymon Kaliski <hi@szymonkaliski.com>",
   "license": "MIT"

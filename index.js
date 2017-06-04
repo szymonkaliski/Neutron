@@ -2,13 +2,29 @@ const argv = require('yargs').argv;
 const express = require('express');
 const fs = require('fs');
 const getPort = require('get-port');
+const npm = require('npm');
 const path = require('path');
+const recursiveDeps = require('recursive-deps');
+const through2 = require('through2');
 const url = require('url');
+const { removeAnsi } = require('ansi-parser');
 
 const { BrowserWindow, app } = require('electron');
 const { watch } = require('chokidar');
 
 let mainWindow;
+
+const reloadMainWindow = () => mainWindow && mainWindow.reload();
+const sendMainWindow = (chan, ...msgs) => mainWindow && mainWindow.send(chan, ...msgs);
+
+let shouldStream = false;
+
+const stream = through2((msg, _, next) => {
+  if (shouldStream) {
+    sendMainWindow('npm', removeAnsi(msg.toString()));
+    next();
+  }
+});
 
 const createServer = port => {
   server = express();
@@ -16,21 +32,76 @@ const createServer = port => {
   server.get('/', (req, res) => {
     const { file } = req.query;
 
+    const filePath = path.join(process.cwd(), file);
+
+    recursiveDeps(filePath).then(deps => {
+      shouldStream = true;
+
+      npm.load(
+        {
+          color: false,
+          loglevel: 'silent',
+          logstream: stream,
+          parseable: true,
+          progress: true,
+          unicode: false,
+          maxsockets: 1
+        },
+        err => {
+          if (err) {
+            shouldStream = false;
+            console.log({ err });
+            return;
+          }
+
+          npm.commands.ls(deps, (err, data) => {
+            console.log({ err });
+
+            const installedDeps = Object.keys(data.dependencies);
+            const missingDeps = deps.filter(dep => installedDeps.indexOf(dep) < 0);
+
+            if (missingDeps.length) {
+              npm.commands.install(missingDeps, (err, out) => {
+                console.log({ err, out });
+
+                shouldStream = false;
+
+                reloadMainWindow();
+              });
+            } else {
+              shouldStream = false;
+            }
+          });
+        }
+      );
+    });
+
     res.send(
       `
       <head>
-        <meta>
-          <title>neutron &mdash; ${file}</title>
-        </meta>
+        <title>neutron &mdash; ${file}</title>
 
         <style>
           * { margin: 0; padding: 0; }
         </style>
 
         <script type="text/javascript">
+          console.info('loading: ${file}');
+
           require('module').globalPaths.push('${path.dirname(file)}');
 
-          console.info('loading: ${file}');
+          const { ipcRenderer } = require('electron');
+
+          ipcRenderer.on('npm', (_, arg) => {
+            const log = (arg || '')
+              .replace('[K[?25h', '')
+              .replace('[K', '')
+              .trim();
+
+            if (log.length) {
+              console.info(log);
+            }
+          });
 
           require('${file}');
         </script>
@@ -76,9 +147,7 @@ const watchPath = path => {
 
   const watcher = watch(path, { ignored, ignoreInitial: true });
 
-  const reload = () => mainWindow.reload();
-
-  watcher.on('add', reload).on('change', reload).on('unlink', reload);
+  watcher.on('add', reloadMainWindow).on('change', reloadMainWindow).on('unlink', reloadMainWindow);
 };
 
 const createWindow = port => {
@@ -88,6 +157,8 @@ const createWindow = port => {
     width: 600,
     height: 600
   });
+
+  mainWindow.openDevTools();
 
   const inputPath = argv._[0];
 
