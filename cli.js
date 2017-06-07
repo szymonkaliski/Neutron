@@ -1,15 +1,25 @@
 #!/usr/bin/env node
 
-const spawn = require('child_process').spawn;
 const electron = require('electron-prebuilt');
 const path = require('path');
+const { argv } = require('yargs');
+const { spawn } = require('child_process');
 
 const serverPath = path.join(__dirname, './index.js');
 
-var args = [serverPath, ...process.argv.splice(2), '--not-packaged=true'];
+const filePath = require.resolve(path.resolve(process.cwd(), argv._[0]));
+const fileDirPath = path.dirname(filePath);
+const fileName = filePath.replace(new RegExp(`^${fileDirPath}/?`), '');
 
-var proc = spawn(electron, args, { stdio: 'inherit' });
+console.log({ serverPath, filePath, fileDirPath, fileName });
 
-proc.on('close', code => {
+const args = [serverPath, fileName, '--not-packaged=true'];
+
+const neutron = spawn(electron, args, {
+  cwd: fileDirPath,
+  stdio: 'inherit'
+});
+
+neutron.on('close', code => {
   process.exit(code);
 });

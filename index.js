@@ -1,4 +1,3 @@
-const argv = require('yargs').argv;
 const express = require('express');
 const fs = require('fs');
 const getPort = require('get-port');
@@ -7,6 +6,7 @@ const path = require('path');
 const recursiveDeps = require('recursive-deps');
 const through2 = require('through2');
 const url = require('url');
+const { argv } = require('yargs');
 const { removeAnsi } = require('ansi-parser');
 
 const { BrowserWindow, app } = require('electron');
@@ -33,6 +33,7 @@ const createServer = port => {
     const { file } = req.query;
 
     const filePath = path.join(process.cwd(), file);
+    const fileDirPath = path.dirname(filePath);
 
     recursiveDeps(filePath).then(deps => {
       shouldStream = true;
@@ -88,7 +89,7 @@ const createServer = port => {
         <script type="text/javascript">
           console.info('loading: ${file}');
 
-          require('module').globalPaths.push('${path.dirname(file)}');
+          require('module').globalPaths.push('${fileDirPath}');
 
           const { ipcRenderer } = require('electron');
 
