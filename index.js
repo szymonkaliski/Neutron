@@ -163,6 +163,8 @@ const createWindow = port => {
 
   const inputPath = argv._[0];
 
+  console.log({ argv, inputPath })
+
   if (fs.existsSync(inputPath)) {
     watchPath(inputPath);
 

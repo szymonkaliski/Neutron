@@ -3,3 +3,6 @@
 
 # Node.js
 node_modules/
+
+# Dist
+dist/
