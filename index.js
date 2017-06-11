@@ -32,8 +32,9 @@ const createServer = port => {
   server.get('/', (req, res) => {
     const { file } = req.query;
 
-    const filePath = path.join(process.cwd(), file);
+    const filePath = require.resolve(path.resolve(process.cwd(), file));
     const fileDirPath = path.dirname(filePath);
+    const fileName = filePath.replace(new RegExp(`^${fileDirPath}/?`), '');
 
     recursiveDeps(filePath).then(deps => {
       shouldStream = true;
@@ -46,7 +47,8 @@ const createServer = port => {
           parseable: true,
           progress: true,
           unicode: false,
-          maxsockets: 1
+          maxsockets: 1,
+          prefix: fileDirPath
         },
         err => {
           if (err) {
@@ -87,7 +89,7 @@ const createServer = port => {
         </style>
 
         <script type="text/javascript">
-          console.info('loading: ${file}');
+          console.info('loading: ${fileName}');
 
           require('module').globalPaths.push('${fileDirPath}');
 
@@ -104,7 +106,7 @@ const createServer = port => {
             }
           });
 
-          require('${file}');
+          require('${fileName}');
         </script>
       </head>
 
@@ -163,7 +165,7 @@ const createWindow = port => {
 
   const inputPath = argv._[0];
 
-  console.log({ argv, inputPath })
+  console.log({ argv, processArgv: process.argv })
 
   if (fs.existsSync(inputPath)) {
     watchPath(inputPath);
