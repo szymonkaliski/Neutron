@@ -4,6 +4,7 @@ const getPort = require('get-port');
 const npm = require('npm');
 const path = require('path');
 const recursiveDeps = require('recursive-deps');
+const slash = require('slash');
 const through2 = require('through2');
 const url = require('url');
 const { argv } = require('yargs');
@@ -11,6 +12,9 @@ const { removeAnsi } = require('ansi-parser');
 
 const { BrowserWindow, app } = require('electron');
 const { watch } = require('chokidar');
+
+const IS_WINDOWS = require('os').platform() === 'win32';
+const windowsPath = path => (IS_WINDOWS ? slash(path) : path);
 
 let mainWindow;
 
@@ -34,7 +38,7 @@ const createServer = port => {
 
     const filePath = require.resolve(path.resolve(process.cwd(), file));
     const fileDirPath = path.dirname(filePath);
-    const fileName = filePath.replace(new RegExp(`^${fileDirPath}/?`), '');
+    const fileName = filePath.replace(new RegExp(`^${fileDirPath}(/?|\\?)`), '');
 
     recursiveDeps(filePath).then(deps => {
       shouldStream = true;
@@ -89,9 +93,9 @@ const createServer = port => {
         </style>
 
         <script type="text/javascript">
-          console.info('loading: ${fileName}');
+          console.info('loading: ${windowsPath(fileName)}');
 
-          require('module').globalPaths.push('${fileDirPath}');
+          require('module').globalPaths.push('${windowsPath(fileDirPath)}');
 
           const { ipcRenderer } = require('electron');
 
@@ -106,7 +110,7 @@ const createServer = port => {
             }
           });
 
-          require('${fileName}');
+          require('${windowsPath(fileName)}');
         </script>
       </head>
 
@@ -164,8 +168,6 @@ const createWindow = port => {
   mainWindow.openDevTools();
 
   const inputPath = argv._[0];
-
-  console.log({ argv, processArgv: process.argv })
 
   if (fs.existsSync(inputPath)) {
     watchPath(inputPath);
