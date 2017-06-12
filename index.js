@@ -84,7 +84,8 @@ const loadFile = ({ filePath, dirPath }) => {
 
     installDeps({ filePath, dirPath }, err => {
       if (err) {
-        console.error(err);
+        // TODO: handle errors
+        sendMainWindow('error', err);
       }
 
       sendMainWindow('require-ready', filePath);
