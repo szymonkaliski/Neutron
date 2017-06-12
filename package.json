@@ -6,9 +6,7 @@
   "dependencies": {
     "ansi-parser": "^3.2.7",
     "chokidar": "^1.6.1",
-    "express": "^4.15.2",
-    "get-port": "^3.0.0",
-    "npm": "^5.0.2",
+    "npm": "^5.0.3",
     "recursive-deps": "^1.0.2",
     "slash": "^1.0.0",
     "through2": "^2.0.3",

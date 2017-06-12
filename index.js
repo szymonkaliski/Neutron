@@ -1,145 +1,102 @@
-const express = require('express');
 const fs = require('fs');
-const getPort = require('get-port');
 const npm = require('npm');
 const path = require('path');
 const recursiveDeps = require('recursive-deps');
-const slash = require('slash');
 const through2 = require('through2');
-const url = require('url');
 const { argv } = require('yargs');
 const { removeAnsi } = require('ansi-parser');
 
 const { BrowserWindow, app } = require('electron');
 const { watch } = require('chokidar');
 
-const IS_WINDOWS = require('os').platform() === 'win32';
-const windowsPath = path => (IS_WINDOWS ? slash(path) : path);
-
 let mainWindow;
 
-const reloadMainWindow = () => mainWindow && mainWindow.reload();
 const sendMainWindow = (chan, ...msgs) => mainWindow && mainWindow.send(chan, ...msgs);
 
 let shouldStream = false;
 
 const stream = through2((msg, _, next) => {
   if (shouldStream) {
-    sendMainWindow('npm', removeAnsi(msg.toString()));
+    const logStr = removeAnsi(msg.toString()).replace('[K[?25h', '').replace('[K', '').trim();
+
+    if (logStr.length) {
+      sendMainWindow('log', logStr);
+    }
+
     next();
   }
 });
 
-const createServer = port => {
-  server = express();
+const installDeps = ({ filePath, dirPath }, callback) => {
+  recursiveDeps(filePath).then(deps => {
+    shouldStream = true;
 
-  server.get('/', (req, res) => {
-    const { file } = req.query;
+    npm.load(
+      {
+        color: false,
+        loglevel: 'silent',
+        logstream: stream,
+        parseable: true,
+        progress: true,
+        unicode: false,
+        maxsockets: 1,
+        prefix: dirPath
+      },
+      err => {
+        if (err) {
+          shouldStream = false;
+          return callback(err);
+        }
 
-    const filePath = require.resolve(path.resolve(process.cwd(), file));
-    const fileDirPath = path.dirname(filePath);
-    const fileName = filePath.replace(new RegExp(`^${fileDirPath}(/?|\\?)`), '');
-
-    recursiveDeps(filePath).then(deps => {
-      shouldStream = true;
-
-      npm.load(
-        {
-          color: false,
-          loglevel: 'silent',
-          logstream: stream,
-          parseable: true,
-          progress: true,
-          unicode: false,
-          maxsockets: 1,
-          prefix: fileDirPath
-        },
-        err => {
+        npm.commands.ls(deps, (err, data) => {
           if (err) {
             shouldStream = false;
-            console.log({ err });
-            return;
+            return callback(err);
           }
 
-          npm.commands.ls(deps, (err, data) => {
-            console.log({ err });
+          const installedDeps = Object.keys(data.dependencies);
+          const missingDeps = deps.filter(dep => installedDeps.indexOf(dep) < 0);
 
-            const installedDeps = Object.keys(data.dependencies);
-            const missingDeps = deps.filter(dep => installedDeps.indexOf(dep) < 0);
-
-            if (missingDeps.length) {
-              npm.commands.install(missingDeps, (err, out) => {
-                console.log({ err, out });
-
+          if (missingDeps.length) {
+            npm.commands.install(missingDeps, err => {
+              if (err) {
                 shouldStream = false;
+                return callback(err);
+              }
 
-                reloadMainWindow();
-              });
-            } else {
               shouldStream = false;
-            }
-          });
-        }
-      );
-    });
-
-    res.send(
-      `
-      <head>
-        <title>neutron &mdash; ${file}</title>
-
-        <style>
-          * { margin: 0; padding: 0; }
-        </style>
-
-        <script type="text/javascript">
-          console.info('loading: ${windowsPath(fileName)}');
-
-          require('module').globalPaths.push('${windowsPath(fileDirPath)}');
-
-          const { ipcRenderer } = require('electron');
-
-          ipcRenderer.on('npm', (_, arg) => {
-            const log = (arg || '')
-              .replace('[K[?25h', '')
-              .replace('[K', '')
-              .trim();
-
-            if (log.length) {
-              console.info(log);
-            }
-          });
-
-          require('${windowsPath(fileName)}');
-        </script>
-      </head>
-
-      <body>
-        <div id="root"></div>
-      </body>
-    `
+              return callback();
+            });
+          } else {
+            shouldStream = false;
+            return callback();
+          }
+        });
+      }
     );
   });
-
-  server.listen(port);
 };
 
-const displayFile = (port, file) => {
-  const formated = url.format({
-    host: `127.0.0.1:${port}`,
-    path: '/',
-    protocol: 'http',
-    query: { file }
+const loadFile = ({ filePath, dirPath }) => {
+  mainWindow.webContents.loadURL(`file://${__dirname}/index.html`);
+  mainWindow.webContents.once('did-finish-load', () => {
+    sendMainWindow('dir-path', dirPath);
+
+    installDeps({ filePath, dirPath }, err => {
+      if (err) {
+        console.error(err);
+      }
+
+      sendMainWindow('require-ready', filePath);
+    });
+
+    if (process.platform === 'darwin') {
+      mainWindow.setRepresentedFilename(filePath);
+    }
   });
-
-  mainWindow.webContents.loadURL(formated);
-
-  if (process.platform === 'darwin') {
-    mainWindow.setRepresentedFilename(file);
-  }
 };
 
-const watchPath = path => {
+const watchPath = ({ filePath, dirPath }) => {
   const ignored = [
     'node_modules/**',
     'bower_components/**',
@@ -152,14 +109,20 @@ const watchPath = path => {
     'desktop.ini'
   ];
 
-  const watcher = watch(path, { ignored, ignoreInitial: true });
+  const watcher = watch(dirPath, { ignored, ignoreInitial: true });
 
-  watcher.on('add', reloadMainWindow).on('change', reloadMainWindow).on('unlink', reloadMainWindow);
+  const reloadFile = () => {
+    if (!mainWindow) {
+      return;
+    }
+
+    loadFile({ filePath, dirPath });
+  };
+
+  watcher.on('add', reloadFile).on('change', reloadFile).on('unlink', reloadFile);
 };
 
-const createWindow = port => {
-  createServer(port);
-
+const createWindow = () => {
   mainWindow = new BrowserWindow({
     width: 600,
     height: 600
@@ -170,9 +133,11 @@ const createWindow = port => {
   const inputPath = argv._[0];
 
   if (fs.existsSync(inputPath)) {
-    watchPath(inputPath);
+    const filePath = require.resolve(path.resolve(process.cwd(), inputPath));
+    const dirPath = path.dirname(filePath);
 
-    displayFile(port, inputPath);
+    watchPath({ filePath, dirPath });
+    loadFile({ filePath, dirPath });
 
     mainWindow.on('closed', () => {
       mainWindow = null;
@@ -183,12 +148,12 @@ const createWindow = port => {
   }
 };
 
-const start = port => {
-  app.on('ready', () => createWindow(port));
+const start = () => {
+  app.on('ready', createWindow);
 
   app.on('window-all-closed', () => {
     app.quit();
   });
 };
 
-getPort().then(port => start(port));
+start();

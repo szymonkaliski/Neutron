@@ -1,0 +1,33 @@
+<head>
+  <title>neutron</title>
+
+  <style>
+    * { margin: 0; padding: 0; }
+  </style>
+
+  <script type="text/javascript">
+    const IS_WINDOWS = require('os').platform() === 'win32';
+    const slash = require('slash');
+    const { ipcRenderer } = require('electron');
+
+    const windowsPath = path => (IS_WINDOWS ? slash(path) : path);
+
+    ipcRenderer.on('log', (_, log) => console.info(log));
+
+    ipcRenderer.on('dir-path', (_, dirPath) => {
+      console.info(`updating require global paths: ${dirPath}`);
+      require('module').globalPaths.push(windowsPath(dirPath));
+    });
+
+    ipcRenderer.on('require-ready', (_, filePath) => {
+      document.title = `neutron \u2014 ${filePath}`;
+
+      console.info(`loading: ${windowsPath(filePath)}`);
+      require(windowsPath(filePath));
+    })
+  </script>
+</head>
+
+<body>
+  <div id="root"></div>
+</body>
