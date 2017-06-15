@@ -1,4 +1,6 @@
 {
+  "author": "Szymon Kaliski <hi@szymonkaliski.com>",
+  "license": "MIT",
   "name": "neutron",
   "version": "0.0.1",
   "description": "run things quickly in electron",
@@ -10,6 +12,7 @@
     "react": "^15.6.0",
     "react-dom": "^15.6.0",
     "react-dom-factories": "^1.0.0",
+    "react-dropzone": "^3.13.2",
     "recursive-deps": "^1.0.2",
     "slash": "^1.0.0",
     "through2": "^2.0.3",
@@ -20,16 +23,14 @@
     "electron-prebuilt": "^1.4.13"
   },
   "scripts": {
-    "pack": "build --mac --win --dir",
-    "dist": "build --mac --win",
     "dev": "electron index.js --not-packaged=true --debug=true",
+    "dist": "build --mac --win",
+    "pack": "build --mac --win --dir",
     "start": "electron index.js --not-packaged=true"
   },
   "bin": {
     "neutron": "./cli.js"
   },
-  "author": "Szymon Kaliski <hi@szymonkaliski.com>",
-  "license": "MIT",
   "build": {
     "appId": "com.szymonkaliski.neutron"
   }

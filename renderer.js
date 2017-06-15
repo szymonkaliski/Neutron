@@ -1,6 +1,8 @@
 const DOM = require('react-dom-factories');
+const Dropzone = require('react-dropzone');
 const ReactDOM = require('react-dom');
 const slash = require('slash');
+const { createElement } = require('react');
 const { ipcRenderer } = require('electron');
 
 const IS_WINDOWS = require('os').platform() === 'win32';
@@ -10,7 +12,17 @@ const windowsPath = path => (IS_WINDOWS ? slash(path) : path);
 let neutronContainer;
 
 const renderNeutron = () => {
-  return DOM.div({}, 'Neutron');
+  return DOM.div(
+    {},
+    'Neutron',
+    createElement(Dropzone, {
+      onDrop: files => {
+        if (files.length >= 1) {
+          ipcRenderer.send('file-drop', files[0].path);
+        }
+      }
+    })
+  );
 };
 
 const mountNeutron = () => {
@@ -42,4 +54,3 @@ ipcRenderer.on('require-ready', (_, filePath) => {
   console.info(`loading: ${windowsPath(filePath)}`);
   require(windowsPath(filePath));
 });
-

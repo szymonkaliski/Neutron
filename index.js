@@ -6,7 +6,7 @@ const through2 = require('through2');
 const { argv } = require('yargs');
 const { removeAnsi } = require('ansi-parser');
 
-const { BrowserWindow, app } = require('electron');
+const { BrowserWindow, app, ipcMain } = require('electron');
 const { watch } = require('chokidar');
 
 let mainWindow;
@@ -79,6 +79,7 @@ const installDeps = ({ filePath, dirPath }, callback) => {
 
 const loadFile = ({ filePath, dirPath }) => {
   mainWindow.webContents.loadURL(`file://${__dirname}/index.html`);
+
   mainWindow.webContents.once('did-finish-load', () => {
     sendMainWindow('dir-path', dirPath);
 
@@ -100,7 +101,7 @@ const loadFile = ({ filePath, dirPath }) => {
 const watchPath = ({ filePath, dirPath }) => {
   const ignored = [
     'node_modules/**',
-    'bower_components/**',
+    '**/node_modules/**',
     '.git',
     '.hg',
     '.svn',
@@ -110,7 +111,11 @@ const watchPath = ({ filePath, dirPath }) => {
     'desktop.ini'
   ];
 
-  const watcher = watch(dirPath, { ignored, ignoreInitial: true });
+  const watchGlob = `${dirPath}/**/*.js`;
+  const watcher = watch(watchGlob, {
+    ignored,
+    ignoreInitial: true
+  });
 
   const reloadFile = () => {
     if (!mainWindow) {
@@ -120,7 +125,19 @@ const watchPath = ({ filePath, dirPath }) => {
     loadFile({ filePath, dirPath });
   };
 
-  watcher.on('add', reloadFile).on('change', reloadFile).on('unlink', reloadFile);
+  watcher.on('change', reloadFile);
+};
+
+const runWatcherAndLoadFile = inputPath => {
+  if (!fs.existsSync(inputPath)) {
+    return;
+  }
+
+  const filePath = require.resolve(path.resolve(process.cwd(), inputPath));
+  const dirPath = path.dirname(filePath);
+
+  watchPath({ filePath, dirPath });
+  loadFile({ filePath, dirPath });
 };
 
 const createWindow = () => {
@@ -129,23 +146,18 @@ const createWindow = () => {
     height: 600
   });
 
+  mainWindow.webContents.loadURL(`file://${__dirname}/index.html`);
   mainWindow.openDevTools();
 
+  mainWindow.on('closed', () => (mainWindow = null));
+
+  ipcMain.on('file-drop', (_, inputPath) => {
+    runWatcherAndLoadFile(inputPath);
+  });
+
   const inputPath = argv._[0];
-
-  if (fs.existsSync(inputPath)) {
-    const filePath = require.resolve(path.resolve(process.cwd(), inputPath));
-    const dirPath = path.dirname(filePath);
-
-    watchPath({ filePath, dirPath });
-    loadFile({ filePath, dirPath });
-
-    mainWindow.on('closed', () => {
-      mainWindow = null;
-    });
-  } else {
-    console.log('path is not a file or folder');
-    process.exit(1);
+  if (inputPath) {
+    runWatcherAndLoadFile(inputPath);
   }
 };
 
