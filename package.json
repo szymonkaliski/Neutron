@@ -32,6 +32,12 @@
     "neutron": "./cli.js"
   },
   "build": {
-    "appId": "com.szymonkaliski.neutron"
+    "appId": "com.szymonkaliski.neutron",
+    "fileAssociations": [
+      {
+        "ext": "js",
+        "name": "JavaScript"
+      }
+    ]
   }
 }

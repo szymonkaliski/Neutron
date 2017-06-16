@@ -7,18 +7,20 @@ const { ipcRenderer } = require('electron');
 
 const IS_WINDOWS = require('os').platform() === 'win32';
 
+const { FILE_DIALOG_OPEN, FILE_DROPPED, LOG, ERR, DIR_PATH_SET, REQUIRE_READY } = require('./constants');
+
 const windowsPath = path => (IS_WINDOWS ? slash(path) : path);
 
 let neutronContainer;
 
 const renderNeutron = () => {
   return DOM.div(
-    {},
-    'Neutron',
+    { onClick: () => ipcRenderer.send(FILE_DIALOG_OPEN) },
     createElement(Dropzone, {
+      disableClick: true,
       onDrop: files => {
         if (files.length >= 1) {
-          ipcRenderer.send('file-drop', files[0].path);
+          ipcRenderer.send(FILE_DROPPED, files[0].path);
         }
       }
     })
@@ -38,15 +40,15 @@ const unmountNeutron = () => {
 
 mountNeutron();
 
-ipcRenderer.on('log', (_, log) => console.info(log));
-ipcRenderer.on('error', (_, err) => console.error(err));
+ipcRenderer.on(LOG, (_, log) => console.info(log));
+ipcRenderer.on(ERR, (_, err) => console.error(err));
 
-ipcRenderer.on('dir-path', (_, dirPath) => {
+ipcRenderer.on(DIR_PATH_SET, (_, dirPath) => {
   console.info(`updating require global paths: ${dirPath}`);
   require('module').globalPaths.push(windowsPath(dirPath));
 });
 
-ipcRenderer.on('require-ready', (_, filePath) => {
+ipcRenderer.on(REQUIRE_READY, (_, filePath) => {
   unmountNeutron();
 
   document.title = `neutron \u2014 ${filePath}`;

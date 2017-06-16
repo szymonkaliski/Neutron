@@ -6,8 +6,10 @@ const through2 = require('through2');
 const { argv } = require('yargs');
 const { removeAnsi } = require('ansi-parser');
 
-const { BrowserWindow, app, ipcMain } = require('electron');
+const { Menu, BrowserWindow, app, dialog, ipcMain } = require('electron');
 const { watch } = require('chokidar');
+
+const { FILE_DIALOG_OPEN, FILE_DROPPED, LOG, ERR, DIR_PATH_SET, REQUIRE_READY } = require('./constants');
 
 let mainWindow;
 
@@ -20,7 +22,7 @@ const stream = through2((msg, _, next) => {
     const logStr = removeAnsi(msg.toString()).replace('[K[?25h', '').replace('[K', '').trim();
 
     if (logStr.length) {
-      sendMainWindow('log', logStr);
+      sendMainWindow(LOG, logStr);
     }
 
     next();
@@ -81,15 +83,15 @@ const loadFile = ({ filePath, dirPath }) => {
   mainWindow.webContents.loadURL(`file://${__dirname}/index.html`);
 
   mainWindow.webContents.once('did-finish-load', () => {
-    sendMainWindow('dir-path', dirPath);
+    sendMainWindow(DIR_PATH_SET, dirPath);
 
     installDeps({ filePath, dirPath }, err => {
       if (err) {
         // TODO: handle errors
-        sendMainWindow('error', err);
+        sendMainWindow(ERR, err);
       }
 
-      sendMainWindow('require-ready', filePath);
+      sendMainWindow(REQUIRE_READY, filePath);
     });
 
     if (process.platform === 'darwin') {
@@ -140,20 +142,60 @@ const runWatcherAndLoadFile = inputPath => {
   loadFile({ filePath, dirPath });
 };
 
+const openFileDialog = () => {
+  dialog.showOpenDialog(
+    {
+      properties: ['openFile', 'openDirectory', 'createDirectory']
+    },
+    paths => {
+      if (paths && paths.length > 0) {
+        runWatcherAndLoadFile(paths[0]);
+      }
+    }
+  );
+};
+
+const setMenu = () => {
+  const menu = Menu.buildFromTemplate([
+    {
+      label: 'Neutron',
+      submenu: [
+        { role: 'about' },
+        { type: 'separator' },
+        { role: 'services', submenu: [] },
+        { type: 'separator' },
+        { role: 'hide' },
+        { role: 'hideothers' },
+        { role: 'unhide' },
+        { type: 'separator' },
+        { role: 'quit' }
+      ]
+    },
+    {
+      label: 'File',
+      submenu: [{ label: 'Open', accelerator: 'CmdOrCtrl+O', click: openFileDialog }]
+    },
+    { label: 'Help', role: 'help' }
+  ]);
+
+  Menu.setApplicationMenu(menu);
+};
+
 const createWindow = () => {
   mainWindow = new BrowserWindow({
     width: 600,
     height: 600
   });
 
+  setMenu();
+
   mainWindow.webContents.loadURL(`file://${__dirname}/index.html`);
   mainWindow.openDevTools();
 
   mainWindow.on('closed', () => (mainWindow = null));
 
-  ipcMain.on('file-drop', (_, inputPath) => {
-    runWatcherAndLoadFile(inputPath);
-  });
+  ipcMain.on(FILE_DROPPED, (_, inputPath) => runWatcherAndLoadFile(inputPath));
+  ipcMain.on(FILE_DIALOG_OPEN, openFileDialog);
 
   const inputPath = argv._[0];
   if (inputPath) {
@@ -163,6 +205,11 @@ const createWindow = () => {
 
 const start = () => {
   app.on('ready', createWindow);
+
+  app.on('open-file', (e, filePath) => {
+    e.preventDefault();
+    runWatcherAndLoadFile(filePath);
+  });
 
   app.on('window-all-closed', () => {
     app.quit();
