@@ -8,12 +8,15 @@
   "dependencies": {
     "ansi-parser": "^3.2.7",
     "chokidar": "^1.6.1",
+    "electron-rebuild": "^1.5.11",
+    "node-gyp": "^3.6.2",
     "npm": "^5.0.3",
     "react": "^15.6.0",
     "react-dom": "^15.6.0",
     "react-dom-factories": "^1.0.0",
     "react-dropzone": "^3.13.2",
     "recursive-deps": "^1.0.2",
+    "require-rebuild": "^1.2.8",
     "slash": "^1.0.0",
     "through2": "^2.0.3",
     "yargs": "^8.0.1"

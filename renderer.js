@@ -7,7 +7,7 @@ const { ipcRenderer } = require('electron');
 
 const IS_WINDOWS = require('os').platform() === 'win32';
 
-const { FILE_DIALOG_OPEN, FILE_DROPPED, LOG, ERR, DIR_PATH_SET, REQUIRE_READY } = require('./constants');
+const { FILE_DIALOG_OPEN, FILE_DROPPED, LOG, ERR, REQUIRE_READY } = require('./constants');
 
 const windowsPath = path => (IS_WINDOWS ? slash(path) : path);
 
@@ -43,15 +43,13 @@ mountNeutron();
 ipcRenderer.on(LOG, (_, log) => console.info(log));
 ipcRenderer.on(ERR, (_, err) => console.error(err));
 
-ipcRenderer.on(DIR_PATH_SET, (_, dirPath) => {
-  console.info(`updating require global paths: ${dirPath}`);
-  require('module').globalPaths.push(windowsPath(dirPath));
-});
-
-ipcRenderer.on(REQUIRE_READY, (_, filePath) => {
+ipcRenderer.on(REQUIRE_READY, (_, { filePath, dirPath }) => {
   unmountNeutron();
 
   document.title = `neutron \u2014 ${filePath}`;
+
+  console.info(`updating require global paths: ${dirPath}`);
+  require('module').globalPaths.push(windowsPath(dirPath));
 
   console.info(`loading: ${windowsPath(filePath)}`);
   require(windowsPath(filePath));

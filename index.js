@@ -4,12 +4,13 @@ const path = require('path');
 const recursiveDeps = require('recursive-deps');
 const through2 = require('through2');
 const { argv } = require('yargs');
+const { rebuild } = require('electron-rebuild');
 const { removeAnsi } = require('ansi-parser');
 
 const { Menu, BrowserWindow, app, dialog, ipcMain } = require('electron');
 const { watch } = require('chokidar');
 
-const { FILE_DIALOG_OPEN, FILE_DROPPED, LOG, ERR, DIR_PATH_SET, REQUIRE_READY } = require('./constants');
+const { ELECTRON_VERSION, ERR, FILE_DIALOG_OPEN, FILE_DROPPED, LOG, REQUIRE_READY } = require('./constants');
 
 let mainWindow;
 
@@ -29,7 +30,17 @@ const stream = through2((msg, _, next) => {
   }
 });
 
+const ensurePackageJson = ({ dirPath }) => {
+  const packageJsonPath = path.join(dirPath, 'package.json');
+
+  if (!fs.existsSync(packageJsonPath)) {
+    fs.writeFileSync(packageJsonPath, '{}', { encoding: 'utf8' });
+  }
+};
+
 const installDeps = ({ filePath, dirPath }, callback) => {
+  ensurePackageJson({ dirPath });
+
   recursiveDeps(filePath).then(deps => {
     shouldStream = true;
 
@@ -38,11 +49,12 @@ const installDeps = ({ filePath, dirPath }, callback) => {
         color: false,
         loglevel: 'silent',
         logstream: stream,
-        parseable: true,
-        progress: true,
-        unicode: false,
         maxsockets: 1,
-        prefix: dirPath
+        parseable: true,
+        prefix: dirPath,
+        progress: true,
+        save: true,
+        unicode: false
       },
       err => {
         if (err) {
@@ -50,13 +62,10 @@ const installDeps = ({ filePath, dirPath }, callback) => {
           return callback(err);
         }
 
-        npm.commands.ls(deps, (err, data) => {
-          if (err) {
-            shouldStream = false;
-            return callback(err);
-          }
-
-          const installedDeps = Object.keys(data.dependencies);
+        npm.commands.ls(deps, (_, data) => {
+          const installedDeps = Object.keys(data.dependencies).filter(
+            key => data.dependencies[key].missing === undefined
+          );
           const missingDeps = deps.filter(dep => installedDeps.indexOf(dep) < 0);
 
           if (missingDeps.length) {
@@ -66,8 +75,16 @@ const installDeps = ({ filePath, dirPath }, callback) => {
                 return callback(err);
               }
 
-              shouldStream = false;
-              return callback();
+              rebuild(dirPath, ELECTRON_VERSION)
+                .then(() => {
+                  shouldStream = false;
+                  // requires to early without timeout?
+                  callback();
+                })
+                .catch(err => {
+                  shouldStream = false;
+                  callback(err);
+                });
             });
           } else {
             shouldStream = false;
@@ -83,15 +100,13 @@ const loadFile = ({ filePath, dirPath }) => {
   mainWindow.webContents.loadURL(`file://${__dirname}/index.html`);
 
   mainWindow.webContents.once('did-finish-load', () => {
-    sendMainWindow(DIR_PATH_SET, dirPath);
-
     installDeps({ filePath, dirPath }, err => {
       if (err) {
         // TODO: handle errors
         sendMainWindow(ERR, err);
       }
 
-      sendMainWindow(REQUIRE_READY, filePath);
+      sendMainWindow(REQUIRE_READY, { filePath, dirPath });
     });
 
     if (process.platform === 'darwin') {
@@ -101,17 +116,7 @@ const loadFile = ({ filePath, dirPath }) => {
 };
 
 const watchPath = ({ filePath, dirPath }) => {
-  const ignored = [
-    'node_modules/**',
-    '**/node_modules/**',
-    '.git',
-    '.hg',
-    '.svn',
-    '.DS_Store',
-    '*.swp',
-    'thumbs.db',
-    'desktop.ini'
-  ];
+  const ignored = ['node_modules/**', '**/node_modules/**', '.git', '.hg', '.svn'];
 
   const watchGlob = `${dirPath}/**/*.js`;
   const watcher = watch(watchGlob, {
