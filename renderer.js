@@ -5,9 +5,16 @@ const slash = require('slash');
 const { createElement } = require('react');
 const { ipcRenderer } = require('electron');
 
-const IS_WINDOWS = require('os').platform() === 'win32';
-
-const { FILE_DIALOG_OPEN, FILE_DROPPED, LOG, ERR, REQUIRE_READY } = require('./constants');
+const {
+  API_FILE,
+  API_NAME,
+  ERR,
+  FILE_DIALOG_OPEN,
+  FILE_DROPPED,
+  IS_WINDOWS,
+  LOG,
+  REQUIRE_READY
+} = require('./constants');
 
 const windowsPath = path => (IS_WINDOWS ? slash(path) : path);
 
@@ -47,6 +54,12 @@ ipcRenderer.on(REQUIRE_READY, (_, { filePath, dirPath }) => {
   unmountNeutron();
 
   document.title = `neutron \u2014 ${filePath}`;
+
+  /* monkey-patch require() to make neutron api endpoint */
+  global.realRequire = require;
+  global.require = name => {
+    return name === API_NAME ? global.realRequire(API_FILE) : global.realRequire(name);
+  };
 
   console.info(`updating require global paths: ${dirPath}`);
   require('module').globalPaths.push(windowsPath(dirPath));

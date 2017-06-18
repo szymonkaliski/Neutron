@@ -4,13 +4,15 @@ const path = require('path');
 const recursiveDeps = require('recursive-deps');
 const through2 = require('through2');
 const { argv } = require('yargs');
-const { rebuild } = require('electron-rebuild');
 const { removeAnsi } = require('ansi-parser');
 
 const { Menu, BrowserWindow, app, dialog, ipcMain } = require('electron');
 const { watch } = require('chokidar');
 
-const { ELECTRON_VERSION, ERR, FILE_DIALOG_OPEN, FILE_DROPPED, LOG, REQUIRE_READY } = require('./constants');
+const { API_NAME, ERR, FILE_DIALOG_OPEN, FILE_DROPPED, LOG, REQUIRE_READY } = require('./constants');
+
+// ensure neutron api is in electron bundle
+require('./neutron.js');
 
 let mainWindow;
 
@@ -66,25 +68,19 @@ const installDeps = ({ filePath, dirPath }, callback) => {
           const installedDeps = Object.keys(data.dependencies).filter(
             key => data.dependencies[key].missing === undefined
           );
-          const missingDeps = deps.filter(dep => installedDeps.indexOf(dep) < 0);
+          const missingDeps = deps.filter(dep => installedDeps.indexOf(dep) < 0).filter(dep => dep !== API_NAME);
+
+          console.log({ missingDeps });
 
           if (missingDeps.length) {
             npm.commands.install(missingDeps, err => {
+              shouldStream = false;
+
               if (err) {
-                shouldStream = false;
                 return callback(err);
               }
 
-              rebuild(dirPath, ELECTRON_VERSION)
-                .then(() => {
-                  shouldStream = false;
-                  // requires to early without timeout?
-                  callback();
-                })
-                .catch(err => {
-                  shouldStream = false;
-                  callback(err);
-                });
+              callback();
             });
           } else {
             shouldStream = false;
@@ -209,6 +205,8 @@ const createWindow = () => {
 };
 
 const start = () => {
+  app.commandLine.appendSwitch('enable-web-bluetooth');
+
   app.on('ready', createWindow);
 
   app.on('open-file', (e, filePath) => {
