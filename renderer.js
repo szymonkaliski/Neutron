@@ -1,3 +1,6 @@
+// ensure neutron api is in electron bundle
+const NEUTRON_API = require('./neutron.js');
+
 const DOM = require('react-dom-factories');
 const Dropzone = require('react-dropzone');
 const ReactDOM = require('react-dom');
@@ -58,7 +61,7 @@ ipcRenderer.on(REQUIRE_READY, (_, { filePath, dirPath }) => {
   /* monkey-patch require() to make neutron api endpoint */
   global.realRequire = require;
   global.require = name => {
-    return name === API_NAME ? global.realRequire(API_FILE) : global.realRequire(name);
+    return name === API_NAME ? NEUTRON_API : global.realRequire(name);
   };
 
   console.info(`updating require global paths: ${dirPath}`);

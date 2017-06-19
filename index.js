@@ -11,9 +11,6 @@ const { watch } = require('chokidar');
 
 const { API_NAME, ERR, FILE_DIALOG_OPEN, FILE_DROPPED, LOG, REQUIRE_READY } = require('./constants');
 
-// ensure neutron api is in electron bundle
-require('./neutron.js');
-
 let mainWindow;
 
 const sendMainWindow = (chan, ...msgs) => mainWindow && mainWindow.send(chan, ...msgs);
