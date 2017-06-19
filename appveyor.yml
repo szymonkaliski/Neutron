@@ -16,6 +16,6 @@ install:
   - yarn install
 
 build_script:
-  - yarn run dist
+  - yarn run dist:win
 
 test: off

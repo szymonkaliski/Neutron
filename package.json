@@ -24,11 +24,13 @@
     "electron-prebuilt": "^1.4.13"
   },
   "scripts": {
-    "dev": "electron index.js --not-packaged=true --debug=true",
-    "dist": "build --mac --win",
-    "pack": "build --mac --win --dir",
+    "postinstall": "install-app-deps",
     "start": "electron index.js --not-packaged=true",
-    "postinstall": "install-app-deps"
+    "dev": "electron index.js --not-packaged=true --debug=true",
+    "dist:mac": "build --mac",
+    "dist:win": "build --win",
+    "pack:mac": "build --mac --dir",
+    "pack:win": "build --win --dir"
   },
   "bin": {
     "neutron": "./cli.js"
