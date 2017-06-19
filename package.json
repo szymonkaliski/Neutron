@@ -35,10 +35,14 @@
   },
   "build": {
     "appId": "com.szymonkaliski.neutron",
+    "win": {
+      "target": "portable"
+    },
     "fileAssociations": [
       {
         "ext": "js",
-        "name": "JavaScript"
+        "name": "JavaScript",
+        "role": "Viewer"
       }
     ]
   }
