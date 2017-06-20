@@ -173,6 +173,20 @@ const setMenu = () => {
       label: 'File',
       submenu: [{ label: 'Open', accelerator: 'CmdOrCtrl+O', click: openFileDialog }]
     },
+    {
+      label: 'Debug',
+      submenu: [
+        {
+          label: 'Toggle Devtools',
+          accelerator: 'CmdOrCtrl+Shift+D',
+          click: () => {
+            if (mainWindow) {
+              mainWindow.toggleDevTools();
+            }
+          }
+        }
+      ]
+    },
     { label: 'Help', role: 'help' }
   ]);
 
