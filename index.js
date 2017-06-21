@@ -67,8 +67,6 @@ const installDeps = ({ filePath, dirPath }, callback) => {
           );
           const missingDeps = deps.filter(dep => installedDeps.indexOf(dep) < 0).filter(dep => dep !== API_NAME);
 
-          console.log({ missingDeps });
-
           if (missingDeps.length) {
             npm.commands.install(missingDeps, err => {
               shouldStream = false;
@@ -202,7 +200,6 @@ const createWindow = () => {
   setMenu();
 
   mainWindow.webContents.loadURL(`file://${__dirname}/index.html`);
-  mainWindow.openDevTools();
 
   mainWindow.on('closed', () => (mainWindow = null));
 
