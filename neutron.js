@@ -1,6 +1,7 @@
 // SerialPort as dep
 
 const SerialPort = require('serialport');
+const Midi = require('midi');
 
 // API
 
@@ -35,6 +36,8 @@ const closeDevTools = getWindow().closeDevTools;
 
 module.exports = {
   SerialPort,
+  Midi,
+
   getWindowSize,
   getContentSize,
   setWindowSize,
