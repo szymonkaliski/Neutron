@@ -185,6 +185,10 @@ const setMenu = () => {
         }
       ]
     },
+    {
+      role: 'window',
+      submenu: [{ role: 'minimize' }, { role: 'close' }]
+    },
     { label: 'Help', role: 'help' }
   ]);
 

@@ -1,27 +1,21 @@
 // ensure neutron api is in electron bundle
 const NEUTRON_API = require('./neutron.js');
 
+// const checkSyntax = require('syntax-error');
+// const fs = require('fs');
 const DOM = require('react-dom-factories');
 const Dropzone = require('react-dropzone');
-const Module = require('module');
 const ReactDOM = require('react-dom');
 const slash = require('slash');
 const { createElement } = require('react');
 const { ipcRenderer } = require('electron');
 
-const {
-  API_NAME,
-  ERR,
-  FILE_DIALOG_OPEN,
-  FILE_DROPPED,
-  IS_WINDOWS,
-  LOG,
-  REQUIRE_READY
-} = require('./constants');
+const { API_NAME, ERR, FILE_DIALOG_OPEN, FILE_DROPPED, IS_WINDOWS, LOG, REQUIRE_READY } = require('./constants');
 
 // yeah, it's ugly, but works...
 // basically I want to be able to require('neutron') to get to the API file (./neutron.js)
-const patchRequireForNeutronApi = () => {
+const patchRequire = () => {
+  const Module = require('module');
   const load = Module._load;
 
   Module._load = (request, parent) => {
@@ -33,7 +27,7 @@ const patchRequireForNeutronApi = () => {
   };
 };
 
-patchRequireForNeutronApi();
+patchRequire();
 
 const windowsPath = path => (IS_WINDOWS ? slash(path) : path);
 
@@ -75,7 +69,8 @@ ipcRenderer.on(REQUIRE_READY, (_, { filePath, dirPath }) => {
   document.title = `neutron \u2014 ${filePath}`;
 
   console.info(`updating require global paths: ${dirPath}`);
-  Module.globalPaths.push(windowsPath(dirPath));
+  process.env.NODE_PATH = dirPath;
+  require('module').Module._initPaths();
 
   console.info(`loading: ${windowsPath(filePath)}`);
   require(windowsPath(filePath));
