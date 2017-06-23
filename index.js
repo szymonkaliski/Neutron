@@ -88,7 +88,7 @@ const installDeps = ({ filePath, dirPath }, callback) => {
 };
 
 const loadFile = ({ filePath, dirPath }) => {
-  mainWindow.webContents.loadURL(`file://${__dirname}/index.html`);
+  mainWindow.webContents.loadURL(`file://${__dirname}/index.html?hasFile=true`);
 
   mainWindow.webContents.once('did-finish-load', () => {
     installDeps({ filePath, dirPath }, err => {
@@ -196,6 +196,8 @@ const setMenu = () => {
 };
 
 const createWindow = () => {
+  const inputPath = argv._[0];
+
   mainWindow = new BrowserWindow({
     width: 600,
     height: 600
@@ -203,14 +205,13 @@ const createWindow = () => {
 
   setMenu();
 
-  mainWindow.webContents.loadURL(`file://${__dirname}/index.html`);
+  mainWindow.webContents.loadURL(`file://${__dirname}/index.html?hasFile=${!!inputPath}`);
 
   mainWindow.on('closed', () => (mainWindow = null));
 
   ipcMain.on(FILE_DROPPED, (_, inputPath) => runWatcherAndLoadFile(inputPath));
   ipcMain.on(FILE_DIALOG_OPEN, openFileDialog);
 
-  const inputPath = argv._[0];
   if (inputPath) {
     runWatcherAndLoadFile(inputPath);
   }
