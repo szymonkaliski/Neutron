@@ -1,7 +1,8 @@
-// SerialPort as dep
+// external deps
 
-const SerialPort = require('serialport');
+const Firmata = require('johnny-five');
 const Midi = require('midi');
+const Serial = require('serialport');
 
 // API
 
@@ -35,8 +36,9 @@ const openDevTools = getWindow().openDevTools;
 const closeDevTools = getWindow().closeDevTools;
 
 module.exports = {
-  SerialPort,
+  Firmata,
   Midi,
+  Serial,
 
   getWindowSize,
   getContentSize,
