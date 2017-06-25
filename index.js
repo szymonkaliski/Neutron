@@ -9,7 +9,7 @@ const { removeAnsi } = require('ansi-parser');
 const { Menu, BrowserWindow, app, dialog, ipcMain } = require('electron');
 const { watch } = require('chokidar');
 
-const { API_NAME, ERR, FILE_DIALOG_OPEN, FILE_DROPPED, LOG, REQUIRE_READY } = require('./constants');
+const { API_NAME, ERR, FILE_DIALOG_OPEN, FILE_DROPPED, LOG, REQUIRE_READY, INSTALLING_DEPS } = require('./constants');
 
 let mainWindow;
 
@@ -68,6 +68,8 @@ const installDeps = ({ filePath, dirPath }, callback) => {
           const missingDeps = deps.filter(dep => installedDeps.indexOf(dep) < 0).filter(dep => dep !== API_NAME);
 
           if (missingDeps.length) {
+            sendMainWindow(INSTALLING_DEPS, missingDeps);
+
             npm.commands.install(missingDeps, err => {
               shouldStream = false;
 

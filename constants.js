@@ -1,4 +1,4 @@
-const constants = ['FILE_DIALOG_OPEN', 'FILE_DROPPED', 'LOG', 'ERR', 'REQUIRE_READY'].reduce(
+const constants = ['FILE_DIALOG_OPEN', 'FILE_DROPPED', 'LOG', 'ERR', 'REQUIRE_READY', 'INSTALLING_DEPS'].reduce(
   (acc, key) => Object.assign(acc, { [key]: key }),
   {}
 );
