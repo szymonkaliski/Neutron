@@ -23,7 +23,7 @@
     "yargs": "^8.0.1"
   },
   "devDependencies": {
-    "electron-builder": "^18.6.2",
+    "electron-builder": "^19.8.0",
     "electron-prebuilt": "^1.4.13"
   },
   "scripts": {
@@ -40,6 +40,7 @@
   },
   "build": {
     "appId": "com.szymonkaliski.neutron",
+    "artifactName": "${productName}.${ext}",
     "win": {
       "target": "portable"
     },
