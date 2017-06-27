@@ -1,5 +1,8 @@
 # Neutron
 
+[![Travis status](https://travis-ci.org/szymonkaliski/Neutron.svg?branch=master)](https://travis-ci.org/szymonkaliski/Neutron)
+[![AppVeyor status](https://ci.appveyor.com/api/projects/status/github/szymonkaliski/neutron?svg=true)](https://ci.appveyor.com/api/projects/status/github/szymonkaliski/neutron)
+
 Self-contained Node and NPM environment, useful for teaching and sketching.
 
 Supports Windows and OSX.
