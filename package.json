@@ -40,7 +40,6 @@
   },
   "build": {
     "appId": "com.szymonkaliski.neutron",
-    "artifactName": "${productName}.${ext}",
     "win": {
       "target": "portable"
     },
