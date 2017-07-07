@@ -1,4 +1,5 @@
 const fs = require('fs');
+const isBuiltinModule = require('is-builtin-module');
 const npm = require('npm');
 const path = require('path');
 const recursiveDeps = require('recursive-deps');
@@ -65,7 +66,11 @@ const installDeps = ({ filePath, dirPath }, callback) => {
           const installedDeps = Object.keys(data.dependencies).filter(
             key => data.dependencies[key].missing === undefined
           );
-          const missingDeps = deps.filter(dep => installedDeps.indexOf(dep) < 0).filter(dep => dep !== API_NAME);
+
+          const missingDeps = deps
+            .filter(dep => installedDeps.indexOf(dep) < 0)
+            .filter(dep => dep !== API_NAME)
+            .filter(dep => !isBuiltinModule(dep));
 
           if (missingDeps.length) {
             sendMainWindow(INSTALLING_DEPS, missingDeps);
