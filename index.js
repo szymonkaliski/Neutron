@@ -3,6 +3,7 @@ const isBuiltinModule = require('is-builtin-module');
 const npm = require('npm');
 const path = require('path');
 const recursiveDeps = require('recursive-deps');
+const runAutoUpdater = require('./auto-updater');
 const through2 = require('through2');
 const { argv } = require('yargs');
 const { removeAnsi } = require('ansi-parser');
@@ -237,6 +238,8 @@ const start = () => {
   app.on('window-all-closed', () => {
     app.quit();
   });
+
+  runAutoUpdater();
 };
 
 start();
