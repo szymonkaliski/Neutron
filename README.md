@@ -49,8 +49,8 @@ var neutron = require('neutron');
 * `neutron.setResizable(shouldBeResizable)` - set window to be resizable or not
 * `neutron.getPosition()` - returns window position on screen `{ x, y }`
 * `neutron.setPosition(x, y)` - sets window position on screen
-* `neutron.isFullscreen()` - returns `true` if window is fullscreened
-* `neutron.setFullscreen(shouldBeFullscreen)` - control window fullscreen status
+* `neutron.isFullScreen()` - returns `true` if window is fullscreened
+* `neutron.setFullScreen(shouldBeFullScreen)` - control window fullscreen status
 * `neutron.openDevTools()` - opens developer tools
 * `neutron.closeDevTools()` - closes developer tools
 * `neutron.getDisplays()` - returns displays as detected by electron [docs](https://github.com/electron/electron/blob/master/docs/api/screen.md#screengetalldisplays)

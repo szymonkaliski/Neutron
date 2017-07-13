@@ -2,7 +2,7 @@
   "author": "Szymon Kaliski <hi@szymonkaliski.com>",
   "license": "MIT",
   "name": "neutron",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "run things quickly in electron",
   "main": "index.js",
   "dependencies": {

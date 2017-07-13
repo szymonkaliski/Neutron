@@ -29,8 +29,8 @@ const getPosition = () => {
 };
 const setPosition = getWindow().setPosition;
 
-const isFullscreen = getWindow().isFullscreen;
-const setFullscreen = getWindow().setFullscreen;
+const isFullScreen = getWindow().isFullScreen;
+const setFullScreen = getWindow().setFullScreen;
 
 const openDevTools = getWindow().openDevTools;
 const closeDevTools = getWindow().closeDevTools;
@@ -47,8 +47,8 @@ module.exports = {
   setResizable,
   getPosition,
   setPosition,
-  isFullscreen,
-  setFullscreen,
+  isFullScreen,
+  setFullScreen,
   getDisplays,
   openDevTools,
   closeDevTools,
