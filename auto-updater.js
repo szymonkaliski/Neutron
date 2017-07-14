@@ -2,6 +2,7 @@ const { autoUpdater } = require('electron-updater');
 const { dialog } = require('electron');
 
 autoUpdater.allowPrerelease = true;
+autoUpdater.autoDownload = true;
 
 module.exports = () => {
   autoUpdater.on('update-downloaded', () => {

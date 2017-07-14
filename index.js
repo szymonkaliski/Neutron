@@ -1,5 +1,6 @@
 const fs = require('fs');
 const isBuiltinModule = require('is-builtin-module');
+const isDev = require('electron-is-dev');
 const npm = require('npm');
 const path = require('path');
 const recursiveDeps = require('recursive-deps');
@@ -149,7 +150,8 @@ const runWatcherAndLoadFile = inputPath => {
 const openFileDialog = () => {
   dialog.showOpenDialog(
     {
-      properties: ['openFile', 'openDirectory', 'createDirectory']
+      properties: ['openFile', 'openDirectory', 'createDirectory'],
+      filters: [{ name: 'JavaScript', extensions: ['js'] }]
     },
     paths => {
       if (paths && paths.length > 0) {
@@ -239,7 +241,9 @@ const start = () => {
     app.quit();
   });
 
-  runAutoUpdater();
+  if (!isDev) {
+    runAutoUpdater();
+  }
 };
 
 start();
