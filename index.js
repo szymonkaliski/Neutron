@@ -150,8 +150,8 @@ const runWatcherAndLoadFile = inputPath => {
 const openFileDialog = () => {
   dialog.showOpenDialog(
     {
-      properties: ['openFile', 'openDirectory', 'createDirectory'],
-      filters: [{ name: 'JavaScript', extensions: ['js'] }]
+      properties: ['openFile'],
+      filters: [{ name: 'JavaScript', extensions: ['js'] }, { name: 'All files', extensions: ['*'] }]
     },
     paths => {
       if (paths && paths.length > 0) {
