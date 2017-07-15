@@ -23,8 +23,10 @@ While Node setup might be easy for developers, its still far away from tools lik
 
 ## How do I use it?
 
-1. download binary from [releases tab](https://github.com/szymonkaliski/Neutron/releases)
+1. download binary from [releases tab](http://github.com/szymonkaliski/Neutron/releases)
 2. run it
+
+You might want to look into [examples](http://github.com/szymonkaliski/Neutron/tree/master/examples) for sample integrations with [p5](https://p5js.org), [three.js](https://threejs.org/) and [regl](http://regl.party/).
 
 # API
 
