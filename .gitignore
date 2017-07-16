@@ -9,3 +9,7 @@ dist/
 
 # worklog/notes
 worklog.md
+
+# examples
+examples/package-lock.json
+examples/package.json

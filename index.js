@@ -5,6 +5,7 @@ const npm = require('npm');
 const path = require('path');
 const recursiveDeps = require('recursive-deps');
 const runAutoUpdater = require('./auto-updater');
+const syntaxCheck = require('syntax-error');
 const through2 = require('through2');
 const { argv } = require('yargs');
 const { removeAnsi } = require('ansi-parser');
@@ -40,13 +41,23 @@ const ensurePackageJson = ({ dirPath }) => {
   }
 };
 
+const checkSyntax = file => {
+  const src = fs.readFileSync(file);
+  const err = syntaxCheck(src, file);
+
+  return err;
+};
+
 const installDeps = ({ filePath, dirPath }, callback) => {
   ensurePackageJson({ dirPath });
 
+  const entryFileError = checkSyntax(filePath);
+  if (entryFileError) {
+    return callback(entryFileError);
+  }
+
   recursiveDeps(filePath).then(deps => {
     shouldStream = true;
-
-    console.log('deps', deps);
 
     npm.load(
       {
