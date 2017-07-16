@@ -26,6 +26,18 @@ const {
 
 const windowsPath = path => (IS_WINDOWS ? slash(path) : path);
 
+// patch console.error so it auto-opens devtools
+const patchConsoleError = () => {
+  const realConsoleError = console.error;
+
+  console.error = (...args) => {
+    NEUTRON_API.openDevTools();
+    realConsoleError(...args);
+  };
+};
+
+patchConsoleError();
+
 const checkSyntax = file => {
   const filePath = windowsPath(path.join(process.env.NODE_PATH, file));
   const source = fs.readFileSync(filePath);
