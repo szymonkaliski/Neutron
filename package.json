@@ -2,8 +2,8 @@
   "author": "Szymon Kaliski <hi@szymonkaliski.com>",
   "license": "MIT",
   "name": "neutron",
-  "version": "0.0.5",
-  "description": "run things quickly in electron",
+  "version": "0.0.6",
+  "description": "Self-contained Node and NPM environment",
   "main": "index.js",
   "dependencies": {
     "ansi-parser": "^3.2.7",
