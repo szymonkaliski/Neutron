@@ -5,8 +5,11 @@ const DOM = require('react-dom-factories');
 const Dropzone = require('react-dropzone');
 const ReactDOM = require('react-dom');
 const createReactClass = require('create-react-class');
+const fs = require('fs');
+const path = require('path');
 const querystring = require('querystring');
 const slash = require('slash');
+const syntaxCheck = require('syntax-error');
 const { createElement } = require('react');
 const { ipcRenderer } = require('electron');
 
@@ -21,8 +24,19 @@ const {
   INSTALLING_DEPS
 } = require('./constants');
 
+const windowsPath = path => (IS_WINDOWS ? slash(path) : path);
+
+const checkSyntax = file => {
+  const filePath = windowsPath(path.join(process.env.NODE_PATH, file));
+  const source = fs.readFileSync(filePath);
+  const error = syntaxCheck(source, filePath);
+
+  return error;
+};
+
 // yeah, it's ugly, but works...
 // basically I want to be able to require('neutron') to get to the API file (./neutron.js)
+// also - simple error checking
 const patchRequire = () => {
   const Module = require('module');
   const load = Module._load;
@@ -32,13 +46,20 @@ const patchRequire = () => {
       return NEUTRON_API;
     }
 
+    if (request.match(/^\.\//)) {
+      const err = checkSyntax(request);
+
+      if (err) {
+        console.error(err.toString());
+        return undefined;
+      }
+    }
+
     return load(request, parent);
   };
 };
 
 patchRequire();
-
-const windowsPath = path => (IS_WINDOWS ? slash(path) : path);
 
 let neutronContainer;
 

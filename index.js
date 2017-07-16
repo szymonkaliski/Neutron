@@ -46,6 +46,8 @@ const installDeps = ({ filePath, dirPath }, callback) => {
   recursiveDeps(filePath).then(deps => {
     shouldStream = true;
 
+    console.log('deps', deps);
+
     npm.load(
       {
         color: false,
@@ -103,7 +105,7 @@ const loadFile = ({ filePath, dirPath }) => {
     installDeps({ filePath, dirPath }, err => {
       if (err) {
         // TODO: handle errors
-        sendMainWindow(ERR, err);
+        sendMainWindow(ERR, err.toString());
       }
 
       sendMainWindow(REQUIRE_READY, { filePath, dirPath });
