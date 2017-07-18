@@ -4,7 +4,7 @@ const electron = require('electron-prebuilt');
 const path = require('path');
 const { spawn } = require('child_process');
 
-const neutronPath = path.join(__dirname, './index.js');
+const neutronPath = path.join(__dirname, './src/index.js');
 
 const args = [neutronPath, ...process.argv.splice(2), '--not-packaged=true'];
 

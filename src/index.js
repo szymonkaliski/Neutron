@@ -4,8 +4,6 @@ const isDev = require('electron-is-dev');
 const npm = require('npm');
 const path = require('path');
 const recursiveDeps = require('recursive-deps');
-const runAutoUpdater = require('./auto-updater');
-const syntaxCheck = require('syntax-error');
 const through2 = require('through2');
 const { argv } = require('yargs');
 const { removeAnsi } = require('ansi-parser');
@@ -13,16 +11,18 @@ const { removeAnsi } = require('ansi-parser');
 const { Menu, BrowserWindow, app, dialog, ipcMain } = require('electron');
 const { watch } = require('chokidar');
 
+const checkSyntax = require('./check-syntax');
+const runAutoUpdater = require('./auto-updater');
+
 const { API_NAME, ERR, FILE_DIALOG_OPEN, FILE_DROPPED, LOG, REQUIRE_READY, INSTALLING_DEPS } = require('./constants');
 
 let mainWindow;
+let isInstallingDeps = false;
 
 const sendMainWindow = (chan, ...msgs) => mainWindow && mainWindow.send(chan, ...msgs);
 
-let shouldStream = false;
-
 const stream = through2((msg, _, next) => {
-  if (shouldStream) {
+  if (isInstallingDeps) {
     const logStr = removeAnsi(msg.toString()).replace('[K[?25h', '').replace('[K', '').trim();
 
     if (logStr.length) {
@@ -41,14 +41,9 @@ const ensurePackageJson = ({ dirPath }) => {
   }
 };
 
-const checkSyntax = file => {
-  const src = fs.readFileSync(file);
-  const err = syntaxCheck(src, file);
-
-  return err;
-};
-
 const installDeps = ({ filePath, dirPath }, callback) => {
+  isInstallingDeps = true;
+
   ensurePackageJson({ dirPath });
 
   const entryFileError = checkSyntax(filePath);
@@ -57,8 +52,6 @@ const installDeps = ({ filePath, dirPath }, callback) => {
   }
 
   recursiveDeps(filePath).then(deps => {
-    shouldStream = true;
-
     npm.load(
       {
         color: false,
@@ -73,7 +66,7 @@ const installDeps = ({ filePath, dirPath }, callback) => {
       },
       err => {
         if (err) {
-          shouldStream = false;
+          isInstallingDeps = false;
           return callback(err);
         }
 
@@ -91,7 +84,7 @@ const installDeps = ({ filePath, dirPath }, callback) => {
             sendMainWindow(INSTALLING_DEPS, missingDeps);
 
             npm.commands.install(missingDeps, err => {
-              shouldStream = false;
+              isInstallingDeps = false;
 
               if (err) {
                 return callback(err);
@@ -100,7 +93,8 @@ const installDeps = ({ filePath, dirPath }, callback) => {
               callback();
             });
           } else {
-            shouldStream = false;
+            isInstallingDeps = false;
+
             return callback();
           }
         });
@@ -117,9 +111,9 @@ const loadFile = ({ filePath, dirPath }) => {
       if (err) {
         // TODO: handle errors
         sendMainWindow(ERR, err.toString());
+      } else {
+        sendMainWindow(REQUIRE_READY, { filePath, dirPath });
       }
-
-      sendMainWindow(REQUIRE_READY, { filePath, dirPath });
     });
 
     if (process.platform === 'darwin') {
@@ -138,7 +132,7 @@ const watchPath = ({ filePath, dirPath }) => {
   });
 
   const reloadFile = () => {
-    if (!mainWindow) {
+    if (!mainWindow || isInstallingDeps) {
       return;
     }
 

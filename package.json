@@ -2,9 +2,9 @@
   "author": "Szymon Kaliski <hi@szymonkaliski.com>",
   "license": "MIT",
   "name": "neutron",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "Self-contained Node and NPM environment",
-  "main": "index.js",
+  "main": "src/index.js",
   "dependencies": {
     "ansi-parser": "^3.2.7",
     "chokidar": "^1.6.1",

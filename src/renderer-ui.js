@@ -1,79 +1,15 @@
-// ensure neutron api is in electron bundle
-const NEUTRON_API = require('./neutron.js');
-
 const DOM = require('react-dom-factories');
 const Dropzone = require('react-dropzone');
 const ReactDOM = require('react-dom');
 const createReactClass = require('create-react-class');
-const fs = require('fs');
-const path = require('path');
-const querystring = require('querystring');
-const slash = require('slash');
-const syntaxCheck = require('syntax-error');
 const { createElement } = require('react');
-const { ipcRenderer } = require('electron');
 
 const {
-  API_NAME,
-  ERR,
   FILE_DIALOG_OPEN,
   FILE_DROPPED,
-  IS_WINDOWS,
-  LOG,
-  REQUIRE_READY,
-  INSTALLING_DEPS
 } = require('./constants');
 
-const windowsPath = path => (IS_WINDOWS ? slash(path) : path);
-
-// patch console.error so it auto-opens devtools
-const patchConsoleError = () => {
-  const realConsoleError = console.error;
-
-  console.error = (...args) => {
-    NEUTRON_API.openDevTools();
-    realConsoleError(...args);
-  };
-};
-
-patchConsoleError();
-
-const checkSyntax = file => {
-  const filePath = windowsPath(path.join(process.env.NODE_PATH, file));
-  const source = fs.readFileSync(filePath);
-  const error = syntaxCheck(source, filePath);
-
-  return error;
-};
-
-// yeah, it's ugly, but works...
-// basically I want to be able to require('neutron') to get to the API file (./neutron.js)
-// also - simple error checking
-const patchRequire = () => {
-  const Module = require('module');
-  const load = Module._load;
-
-  Module._load = (request, parent) => {
-    if (request === API_NAME) {
-      return NEUTRON_API;
-    }
-
-    if (request.match(/^\.\//)) {
-      const err = checkSyntax(request);
-
-      if (err) {
-        console.error(err.toString());
-        return undefined;
-      }
-    }
-
-    return load(request, parent);
-  };
-};
-
-patchRequire();
-
-let neutronContainer;
+let uiContainer;
 
 const renderSpinner = createReactClass({
   componentDidMount: function() {
@@ -199,55 +135,32 @@ const renderNeutron = () => {
   );
 };
 
-const mountNeutron = () => {
-  if (!neutronContainer) {
-    neutronContainer = document.createElement('div');
-    document.body.appendChild(neutronContainer);
-    ReactDOM.render(DOM.div({}, renderNeutron()), neutronContainer);
+const mountDropzone = () => {
+  if (!uiContainer) {
+    uiContainer = document.createElement('div');
+    document.body.appendChild(uiContainer);
+    ReactDOM.render(DOM.div({}, renderNeutron()), uiContainer);
   }
 };
 
 const mountSpinner = deps => {
-  if (!neutronContainer) {
-    neutronContainer = document.createElement('div');
-    document.body.appendChild(neutronContainer);
-    ReactDOM.render(createElement(renderSpinner, { size: 60, deps }), neutronContainer);
+  if (!uiContainer) {
+    uiContainer = document.createElement('div');
+    document.body.appendChild(uiContainer);
+    ReactDOM.render(createElement(renderSpinner, { size: 60, deps }), uiContainer);
   }
 };
 
-const unmountNeutron = () => {
-  if (neutronContainer) {
-    ReactDOM.unmountComponentAtNode(neutronContainer);
-    document.body.removeChild(neutronContainer);
-    neutronContainer = undefined;
+const unmountUI = () => {
+  if (uiContainer) {
+    ReactDOM.unmountComponentAtNode(uiContainer);
+    document.body.removeChild(uiContainer);
+    uiContainer = undefined;
   }
 };
 
-const query = window.location.search.replace('?', '');
-const parsedQuery = querystring.parse(query);
-
-// only mount neutron UI if there's no file on start
-if (parsedQuery.hasFile === 'false') {
-  mountNeutron();
-}
-
-ipcRenderer.on(LOG, (_, log) => console.info(log));
-ipcRenderer.on(ERR, (_, err) => console.error(err));
-
-ipcRenderer.on(INSTALLING_DEPS, (_, deps) => {
-  unmountNeutron();
-  mountSpinner(deps);
-});
-
-ipcRenderer.on(REQUIRE_READY, (_, { filePath, dirPath }) => {
-  unmountNeutron();
-
-  document.title = `neutron \u2014 ${filePath}`;
-
-  console.info(`updating require global paths: ${dirPath}`);
-  process.env.NODE_PATH = dirPath;
-  require('module').Module._initPaths();
-
-  console.info(`loading: ${windowsPath(filePath)}`);
-  require(windowsPath(filePath));
-});
+module.exports = {
+  mountDropzone,
+  mountSpinner,
+  unmountUI
+};
